@@ -1,0 +1,70 @@
+name: 'All in one: setup node, pnpm, cache'
+description: 'Setup node and pnpm versions, manage cache and runs pnpm install.'
+author: JulienBoulay
+branding:
+  icon: 'package'
+  color: 'orange'
+inputs:
+  ########################
+  # For actions/setup-node
+  ########################
+  node-version:
+    description: "Override the default node version, or override what is specified in package.json"
+    required: false
+  node-version-file: 
+    description: "Override where the default node version is read from. By default this reads from package.json. Specifying node-version will override this"
+    required: false
+    default: 'package.json'
+
+  ########################
+  # For pnpm/setup-action
+  ########################  
+  pnpm-version:
+    description: 'Override the default pnpm version, or override what is specified in package.json'
+    required: false
+  args:
+    description: 'Directly pass args to pnpm'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    # The pnpm action:
+    - name: 'Setup pnpm'
+      uses: pnpm/action-setup@v4
+      with:
+        version: ${{ inputs.pnpm-version }}
+        run_install: false
+
+    # The Node Action
+    - name: 'Setup node'
+      uses: actions/setup-node@v4
+      with:
+        # If specified, takes precedence over node-version-file
+        node-version: ${{ inputs.node-version }}
+        # Default node version read from package.json, but can be changed by passing in inputs.node-version-file
+        node-version-file: ${{ inputs.node-version-file }}
+
+    - name: Restore cached npm dependencies
+      uses: actions/cache/restore@v4
+      with:
+        path: |
+          node_modules
+          ~/.cache/Cypress # needed for the Cypress binary
+        key: npm-dependencies-${{ hashFiles('pnpm-lock.yaml') }}
+    
+    - name: 'Install dependencies'
+      shell: 'bash'
+      run: pnpm install ${{ inputs.args }}
+    
+    - name: 'Install cypress'
+      shell: 'bash'
+      run: npx cypress install
+      
+    - name: Cache npm dependencies
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          node_modules
+          ~/.cache/Cypress # needed for the Cypress binary
+        key: npm-dependencies-${{ hashFiles('pnpm-lock.yaml') }}
