@@ -40,31 +40,15 @@ runs:
     - name: 'Setup node'
       uses: actions/setup-node@v4
       with:
+        cache: 'pnpm'
         # If specified, takes precedence over node-version-file
         node-version: ${{ inputs.node-version }}
         # Default node version read from package.json, but can be changed by passing in inputs.node-version-file
         node-version-file: ${{ inputs.node-version-file }}
 
-    - name: Restore cached npm dependencies
-      uses: actions/cache/restore@v4
-      with:
-        path: |
-          node_modules
-          ~/.cache/Cypress # needed for the Cypress binary
-        key: npm-dependencies-${{ hashFiles('pnpm-lock.yaml') }}
-    
     - name: 'Install dependencies'
       shell: 'bash'
       run: pnpm install ${{ inputs.args }}
     
-    - name: 'Install cypress'
-      shell: 'bash'
-      run: npx cypress install
       
-    - name: Cache npm dependencies
-      uses: actions/cache/save@v4
-      with:
-        path: |
-          node_modules
-          ~/.cache/Cypress # needed for the Cypress binary
-        key: npm-dependencies-${{ hashFiles('pnpm-lock.yaml') }}
+    
